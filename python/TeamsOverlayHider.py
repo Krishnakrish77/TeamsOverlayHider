@@ -1,18 +1,40 @@
-import pyautogui
+from pyautogui import size, position
 import pygetwindow as gw
-import keyboard
+import keyboard 
 import time
 import threading
-import winsound
+from winsound import Beep
+import pystray
+from PIL import Image, ImageDraw
+from os import _exit
 
 toggle = True
+running = True
+
+def create_image():
+    width = 64
+    height = 64
+    color1 = "white"
+    color2 = "red"
+
+    image = Image.new("RGB", (width, height), color1)
+    dc = ImageDraw.Draw(image)
+    dc.rectangle(
+        [(width // 2, 0), (width, height // 2)],
+        fill=color2
+    )
+    dc.rectangle(
+        [(0, height // 2), (width // 2, height)],
+        fill=color2
+    )
+    return image
 
 def watch_mouse():
-    global toggle
-    while True:
+    global toggle, running
+    while running:
         if toggle:
-            xpos, ypos = pyautogui.position()
-            screen_width, screen_height = pyautogui.size()
+            xpos, ypos = position()
+            screen_width, screen_height = size()
 
             in_top_center = ypos < 20 and (screen_width / 2 - 50) < xpos < (screen_width / 2 + 50)
 
@@ -28,7 +50,7 @@ def watch_mouse():
                 else:
                     overlay_window.minimize()
             except IndexError:
-                pass  # Window not found
+                pass
 
         time.sleep(0.1)
 
@@ -36,27 +58,41 @@ def watch_mouse():
 #     pyautogui.alert(text=message, title='Notification', button='OK')
 
 def beep_sound():
-    winsound.Beep(800, 200)  # Beep at 1000 Hz for 500 ms
+    Beep(800, 200)
 
 def notify_user(message):
     # show_tooltip(message)
-    print(message)
     beep_sound()
 
-def toggle_overlay():
+def toggle_overlay(icon, item):
     global toggle
     toggle = not toggle
+    icon.update_menu()
     if toggle:
         notify_user("Overlay control enabled")
     else:
         notify_user("Overlay control disabled")
 
-def main():
-    threading.Thread(target=watch_mouse, daemon=True).start()
-    keyboard.add_hotkey('ctrl+;', toggle_overlay)
+def on_quit(icon, item):
+    global running
+    running = False
+    icon.stop()
+    # Properly terminate the program
+    _exit(0)
 
-    print("Press Ctrl + ; to toggle overlay control.")
-    keyboard.wait('esc')  # Keep the script running until 'esc' is pressed
+def setup(icon):
+    icon.visible = True
+    threading.Thread(target=watch_mouse, daemon=True).start()
+    keyboard.add_hotkey('ctrl+;', lambda: toggle_overlay(icon, None))
+
+def main():
+    image = create_image()
+    menu = pystray.Menu(
+        pystray.MenuItem(lambda item: "Enabled" if toggle else "Disabled", lambda icon, item: toggle_overlay(icon, item)),
+        pystray.MenuItem('Exit', on_quit)
+    )
+    icon = pystray.Icon("Teams Overlay Control", image, "Overlay Control", menu)
+    icon.run(setup)
 
 if __name__ == "__main__":
     main()
