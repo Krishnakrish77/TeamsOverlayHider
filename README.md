@@ -34,4 +34,4 @@ Allows you to switch tabs freely while sharing browser screen without the annoyi
 MIT
 
 ### Disclaimer
-All trademarks, logos and brand names are the property of their respective owners. All company, product and service names used in this website are for identification purposes only.
+All trademarks, logos and brand names are the property of their respective owners. All company, product and service names used in this project are for identification purposes only.
